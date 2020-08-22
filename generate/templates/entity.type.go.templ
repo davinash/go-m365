@@ -1,9 +1,14 @@
 // Generated Code
 package graph
+import "github.com/davinash/go-m365/types"
 
 type {{.Name}} struct {
-    {{- range $y := .Members }}
-        {{$.Name}}Enum{{$y.TName}}  {{$.Name}} = "{{$y.Name}}"
+    {{- range $y := .Properties }}
+    {{- if not $y.IsBasicType}}
+    {{$y.EName}} *types.{{$y.Type}} `json:"{{$y.Name}},omitempty"`
+    {{- else }}
+    {{$y.EName}} *{{$y.Type}} `json:"{{$y.Name}},omitempty"`
+    {{- end }}
     {{- end }}
 }
 
