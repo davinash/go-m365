@@ -38,6 +38,7 @@ func main() {
 	type EnumMember struct {
 		Name  string
 		Value string
+		TName string
 	}
 
 	type EnumType struct {
@@ -46,7 +47,7 @@ func main() {
 	}
 
 	for _, et := range schema.DataServices.Schema.EnumType {
-		p := filepath.Join("..", "graph", fmt.Sprintf("%s.go", et.Name))
+		p := filepath.Join("..", "graph", fmt.Sprintf("%sEnum.go", strings.Title(et.Name)))
 		out, err := os.Create(p)
 		if err != nil {
 			fmt.Println(err)
@@ -59,11 +60,70 @@ func main() {
 		}
 		for _, m := range et.Member {
 			e.Members = append(e.Members, EnumMember{
-				Name:  strings.Title(m.Name),
+				Name:  m.Name,
+				TName: strings.Title(m.Name),
 				Value: m.Value,
 			})
 		}
 		enumTemplate.ExecuteTemplate(out, "enum.go.templ", e)
 		out.Close()
+	}
+
+	type Property struct {
+		Name           string
+		Type           string
+		IsCollection   bool
+		CollectionType string
+	}
+
+	type EntityType struct {
+		Name       string
+		BaseType   string
+		OpenType   string
+		Properties []Property
+	}
+
+	for _, etp := range schema.DataServices.Schema.EntityType {
+		p := filepath.Join("..", "graph", fmt.Sprintf("%sTypes.go", strings.Title(etp.Name)))
+		out, err := os.Create(p)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		t := EntityType{
+			Name:       etp.Name,
+			BaseType:   etp.BaseType,
+			OpenType:   etp.OpenType,
+			Properties: make([]Property, 0),
+		}
+		for _, p := range etp.Property {
+			property := Property{
+				Name: p.Name,
+			}
+			property.Type = XmlToGoType(p.Type)
+
+			t.Properties = append(t.Properties, property)
+		}
+		enumTemplate.ExecuteTemplate(out, "entity.type.go.templ", t)
+		out.Close()
+	}
+}
+
+func XmlToGoType(t string) string {
+	if strings.Contains(t, "Collection") {
+		s := strings.Trim(t, "Collection(")
+		s1 := strings.Trim(s, ")")
+
+		split := strings.Split(s1, ".")
+		return fmt.Sprintf("[]%s", strings.Title(split[len(split)-1]))
+
+	} else if strings.Contains(t, "microsoft.graph.") {
+		split := strings.Split(t, ".")
+		return fmt.Sprintf("*%s", strings.Title(split[len(split)-1]))
+	} else if strings.Contains(t, "Edm.") {
+		split := strings.Split(t, ".")
+		return fmt.Sprintf("*%s", strings.Title(split[len(split)-1]))
+	} else {
+		panic(fmt.Sprintf("Handle tye type %s", t))
 	}
 }

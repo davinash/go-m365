@@ -1,10 +1,9 @@
 // Generated Code
 package graph
 
-type {{.Name}} string
-
-const (
+type {{.Name}} struct {
     {{- range $y := .Members }}
         {{$.Name}}Enum{{$y.TName}}  {{$.Name}} = "{{$y.Name}}"
     {{- end }}
-)
+}
+
