@@ -135,57 +135,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	//GenerateEnums(schema, templ)
-	for _, et := range schema.DataServices.Schema.EnumType {
-		p := filepath.Join("..", "graph", fmt.Sprintf("%sEnum.go", strings.Title(et.Name)))
-		out, err := os.Create(p)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+	GenerateEnums(schema, templ)
+	GenerateEntities(schema, templ)
 
-		e := EnumType{
-			Name:    strings.Title(et.Name),
-			Members: make([]EnumMember, 0),
-		}
-		for _, m := range et.Member {
-			e.Members = append(e.Members, EnumMember{
-				Name:  m.Name,
-				TName: strings.Title(m.Name),
-				Value: m.Value,
-			})
-		}
-		templ.ExecuteTemplate(out, "enum.go.templ", e)
-		out.Close()
-	}
-	//GenerateEntities(schema, templ)
-	for _, etp := range schema.DataServices.Schema.EntityType {
-		p := filepath.Join("..", "graph", fmt.Sprintf("%sEntity.go", strings.Title(etp.Name)))
-		out, err := os.Create(p)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		t := EntityType{
-			Name:       strings.Title(etp.Name),
-			BaseType:   etp.BaseType,
-			OpenType:   etp.OpenType,
-			Properties: make([]Property, 0),
-		}
-		for _, p := range etp.Property {
-			property := Property{
-				Name:        p.Name,
-				EName:       strings.Title(p.Name),
-				IsBasicType: false,
-			}
-			property.Type, property.IsBasicType = XmlToGoType(p.Type)
-			t.Properties = append(t.Properties, property)
-		}
-		err = templ.ExecuteTemplate(out, "entity.type.go.templ", t)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		out.Close()
-	}
 }
