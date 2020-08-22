@@ -1,7 +1,9 @@
 package graph
 
-type {{EnumName}} string
+type {{.Name}} string
 
 const (
-    {{- range $field := .Fields }}
+    {{- range $y := .Members }}
+        {{$.Name}}Enum{{.Name}}  = "{{$y.Name}}"
+    {{- end }}
 )

@@ -5,14 +5,17 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 func main() {
 	fmt.Println("Hello world!!")
 
-	xmlFile, err := os.Open("generate/v1.0.xml")
+	xmlFile, err := os.Open("v1.0.xml")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -26,10 +29,41 @@ func main() {
 		os.Exit(1)
 	}
 
+	enumTemplate, err := template.ParseFiles("templates/enum.go.templ")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	type EnumMember struct {
+		Name  string
+		Value string
+	}
+
+	type EnumType struct {
+		Name    string
+		Members []EnumMember
+	}
+
 	for _, et := range schema.DataServices.Schema.EnumType {
-		fmt.Printf("-----> %v\n", et.Name)
-		for _, m := range et.Member {
-			fmt.Printf("----------> %v", m.Name)
+		p := filepath.Join("..", "graph", fmt.Sprintf("%s.go", et.Name))
+		out, err := os.Create(p)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
 		}
+
+		e := EnumType{
+			Name:    strings.Title(et.Name),
+			Members: make([]EnumMember, 0),
+		}
+		for _, m := range et.Member {
+			e.Members = append(e.Members, EnumMember{
+				Name:  strings.Title(m.Name),
+				Value: m.Value,
+			})
+		}
+		enumTemplate.ExecuteTemplate(out, "enum.go.templ", e)
+		out.Close()
 	}
 }
